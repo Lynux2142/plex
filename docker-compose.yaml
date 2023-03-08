@@ -3,6 +3,9 @@ version: "2.1"
 services:
   nordvpn:
     image: ghcr.io/bubuntux/nordvpn
+    container_name: nordvpn
+    networks:
+      - network_nordvpn
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -154,3 +157,7 @@ volumes:
       type: nfs
       device: /mnt/DataDisk/config/qbittorrent
       o: bind
+
+networks:
+  network_nordvpn:
+    driver: bridge
