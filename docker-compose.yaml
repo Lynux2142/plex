@@ -1,6 +1,21 @@
 version: "2.1"
 
 services:
+  nordvpn:
+    image: ghcr.io/bubuntux/nordvpn
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - TOKEN=e9f2ab53cb70b4eadfce1ca4c6db097919162728f83afa46e361ab0323f5876e
+      - CONNECT=Switzerland
+      - TECHNOLOGY=NordLynx
+      - NETWORK=192.168.0.0/24
+    ports:
+      - 8080:8080
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1  # Recomended if using ipv4 only
+
   plex:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
@@ -70,7 +85,7 @@ services:
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
-    network_mode: bridge
+    network_mode: service:nordvpn
     environment:
       - PUID=1000
       - PGID=1000
@@ -79,11 +94,9 @@ services:
     volumes:
       - config_qbittorrent:/config
       - downloads:/downloads
-    ports:
-      - 8080:8080
-      - 6881:6881
-      - 6881:6881/udp
     restart: unless-stopped
+    depends_on:
+      - nordvpn
 
 volumes:
   movies:
