@@ -14,9 +14,12 @@ services:
       - CONNECT=Switzerland
       - TECHNOLOGY=NordLynx
       - NETWORK=192.168.0.0/24
-      - PORTS=8080;8080
+      - PORTS=8080;6881;9117
     ports:
       - 8080:8080
+      - 6881:6881
+      - 6881:6881/udp
+      - 9117:9117
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
 
@@ -73,7 +76,7 @@ services:
   jackett:
     image: lscr.io/linuxserver/jackett:latest
     container_name: jackett
-    network_mode: bridge
+    network_mode: service:nordvpn
     environment:
       - PUID=1000
       - PGID=1000
@@ -82,9 +85,9 @@ services:
     volumes:
       - config_jackett:/config
       - downloads:/downloads
-    ports:
-      - 9117:9117
     restart: unless-stopped
+    depends_on:
+      - nordvpn
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
