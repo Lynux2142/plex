@@ -10,7 +10,7 @@ services:
       - NET_ADMIN
       - NET_RAW
     environment:
-      - TOKEN=e9f2ab53cb70b4eadfce1ca4c6db097919162728f83afa46e361ab0323f5876e
+      - TOKEN=${NORDVPN_TOKEN}
       - CONNECT=Switzerland
       - TECHNOLOGY=NordLynx
       - NETWORK=192.168.0.0/24
