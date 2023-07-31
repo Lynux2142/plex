@@ -20,6 +20,7 @@ services:
       - 6881:6881
       - 6881:6881/udp
       - 9117:9117
+      - 8191:8191
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
     restart: unless-stopped
@@ -86,6 +87,21 @@ services:
     volumes:
       - config_jackett:/config
       - downloads:/downloads
+    restart: unless-stopped
+    depends_on:
+      - nordvpn
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    network_mode: service:nordvpn
+    environment:
+      - LOG_LEVEL=info
+      - LOG_HTML=false
+      - CAPTCHA_SOLVER=harvester
+      - HARVESTER_ENDPOINT=https://127.0.0.1:5000/token
+      - TZ=Europe/Paris
+      - PORT=8191
     restart: unless-stopped
     depends_on:
       - nordvpn
