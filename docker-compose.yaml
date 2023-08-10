@@ -1,20 +1,18 @@
-version: "2.1"
+version: "3"
 
 services:
-  nordvpn:
-    image: ghcr.io/bubuntux/nordvpn
-    container_name: nordvpn
+  nordlynx:
+    image: ghcr.io/bubuntux/nordlynx
+    container_name: nordlynx
     networks:
-      - network_nordvpn
+      - network_nordlynx
     cap_add:
       - NET_ADMIN
-      - NET_RAW
     environment:
-      - TOKEN=${NORDVPN_TOKEN}
-      - CONNECT=Switzerland
-      - TECHNOLOGY=NordLynx
+      - PRIVATE_KEY=${NORDVPN_PRIVATE_KEY}
+      - QUERY=filters\[country_id\]=209
       - NETWORK=192.168.0.0/24
-      - PORTS=8080;6881;9117
+      - TZ=Europe/Paris
     ports:
       - 8080:8080
       - 6881:6881
@@ -37,8 +35,8 @@ services:
       - PLEX_CLAIM=${PLEX_CLAIM}
     volumes:
       - config_plex:/config
-      - /mnt/DataDisk/tv:/tv
-      - /mnt/DataDisk/movies:/movies
+      - tv:/tv
+      - movies:/movies
     ports:
       - 32400:32400
     restart: unless-stopped
@@ -78,7 +76,7 @@ services:
   jackett:
     image: lscr.io/linuxserver/jackett:latest
     container_name: jackett
-    network_mode: service:nordvpn
+    network_mode: service:nordlynx
     environment:
       - PUID=1000
       - PGID=1000
@@ -89,12 +87,12 @@ services:
       - downloads:/downloads
     restart: unless-stopped
     depends_on:
-      - nordvpn
+      - nordlynx
 
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
-    network_mode: service:nordvpn
+    network_mode: service:nordlynx
     environment:
       - LOG_LEVEL=info
       - LOG_HTML=false
@@ -104,12 +102,12 @@ services:
       - PORT=8191
     restart: unless-stopped
     depends_on:
-      - nordvpn
+      - nordlynx
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
-    network_mode: service:nordvpn
+    network_mode: service:nordlynx
     environment:
       - PUID=1000
       - PGID=1000
@@ -120,7 +118,7 @@ services:
       - downloads:/downloads
     restart: unless-stopped
     depends_on:
-      - nordvpn
+      - nordlynx
 
 volumes:
   movies:
@@ -180,5 +178,5 @@ volumes:
       o: bind
 
 networks:
-  network_nordvpn:
+  network_nordlynx:
     driver: bridge
