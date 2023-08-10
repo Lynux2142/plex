@@ -41,6 +41,21 @@ services:
       - 32400:32400
     restart: unless-stopped
 
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - GUID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - config_jellyfin:/config
+      - tv:/data/tvshows
+      - movies:/data/movies
+    ports:
+      - 8096:8096
+    restart: unless-stopped
+
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
@@ -147,6 +162,13 @@ volumes:
     driver_opts:
       type: nfs
       device: /mnt/DataDisk/config/plex
+      o: bind
+
+  config_jellyfin:
+    driver: local
+    driver_opts:
+      type: nfs
+      device: /mnt/DataDisk/config/jellyfin
       o: bind
 
   config_radarr:
