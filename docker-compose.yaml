@@ -1,20 +1,23 @@
 version: "3"
 
 services:
-  nordvpn:
-    image: ghcr.io/bubuntux/nordvpn
-    container_name: nordvpn
+  nordlynx:
+    image: ghcr.io/bubuntux/nordlynx
+    container_name: nordlynx
     networks:
-      - network_nordvpn
+      - network_nordlynx
     cap_add:
       - NET_ADMIN
-      - NET_RAW
     environment:
-      - TOKEN=${NORDVPN_TOKEN}
-      - CONNECT=Switzerland
-      - TECHNOLOGY=NordLynx
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - PRIVATE_KEY=${NORDVPN_PRIVATE_KEY}
+      - QUERY=filters\[country_id\]=209
       - NETWORK=192.168.0.0/24
-      - PORTS=8080;6881;9117
+      - TZ=Europe/Paris
+      - ALLOWED_IPS=0.0.0.0/1,128.0.0.0/1
+      - "POST_UP=ip -4 route add $$(wg | awk -F'[: ]' '/endpoint/ {print $$5}') via $$(ip route | awk '/default/ {print $$3}')"
+      - "PRE_DOWN=ip -4 route del $$(route -n | awk '/255.255.255.255/ {print $$1}') via $$(ip route | awk '/default/ {print $$3}')"
     ports:
       - 8080:8080
       - 6881:6881
@@ -30,8 +33,8 @@ services:
     container_name: plex
     network_mode: bridge
     environment:
-      - PLEX_UID=297536
-      - PLEX_GID=297536
+      - PLEX_UID=${PLEX_UID}
+      - PLEX_GID=${PLEX_GID}
       - TZ=Europe/Paris
     volumes:
       - /var/packages/PlexMediaServer/shares/PlexMediaServer/AppData/tmp:/tmp
@@ -45,13 +48,30 @@ services:
       - /dev/dri:/dev/dri
     restart: unless-stopped
 
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Europe/Paris
+    volumes:
+      - config_jellyfin:/config
+      - tv:/tv
+      - movies:/movies
+    ports:
+      - 8096:8096
+    devices:
+      - /dev/dri:/dev/dri
+    restart: unless-stopped
+
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     network_mode: bridge
     environment:
-      - PUID=297536
-      - PGID=297536
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=Europe/Paris
     volumes:
       - config_radarr:/config
@@ -66,8 +86,8 @@ services:
     container_name: sonarr
     network_mode: bridge
     environment:
-      - PUID=297536
-      - PGID=297536
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=Europe/Paris
     volumes:
       - config_sonarr:/config
@@ -80,10 +100,10 @@ services:
   jackett:
     image: lscr.io/linuxserver/jackett:latest
     container_name: jackett
-    network_mode: service:nordvpn
+    network_mode: service:nordlynx
     environment:
-      - PUID=297536
-      - PGID=297536
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=Europe/Paris
       - AUTO_UPDATE=true
     volumes:
@@ -91,12 +111,12 @@ services:
       - downloads:/downloads
     restart: unless-stopped
     depends_on:
-      - nordvpn
+      - nordlynx
 
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
-    network_mode: service:nordvpn
+    network_mode: service:nordlynx
     environment:
       - LOG_LEVEL=info
       - LOG_HTML=false
@@ -106,15 +126,15 @@ services:
       - PORT=8191
     restart: unless-stopped
     depends_on:
-      - nordvpn
+      - nordlynx
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
-    network_mode: service:nordvpn
+    network_mode: service:nordlynx
     environment:
-      - PUID=297536
-      - PGID=297536
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=Europe/Paris
       - WEBUI_PORT=8080
     volumes:
@@ -122,7 +142,7 @@ services:
       - downloads:/downloads
     restart: unless-stopped
     depends_on:
-      - nordvpn
+      - nordlynx
 
 volumes:
   movies:
@@ -151,6 +171,13 @@ volumes:
     driver_opts:
       type: nfs
       device: /var/packages/PlexMediaServer/shares/PlexMediaServer/AppData/
+      o: bind
+
+  config_jellyfin:
+    driver: local
+    driver_opts:
+      type: nfs
+      device: /volume1/Data/config/jellyfin
       o: bind
 
   config_radarr:
@@ -182,5 +209,5 @@ volumes:
       o: bind
 
 networks:
-  network_nordvpn:
+  network_nordlynx:
     driver: bridge
