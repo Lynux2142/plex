@@ -29,6 +29,8 @@ services:
     restart: unless-stopped
 
   plex:
+    profiles:
+      - plex
     image: plexinc/pms-docker:plexpass
     container_name: plex
     network_mode: bridge
@@ -59,6 +61,7 @@ services:
       - config_jellyfin:/config
       - tv:/tv
       - movies:/movies
+      - music:/music
     ports:
       - 8096:8096
     devices:
@@ -97,6 +100,22 @@ services:
       - 8989:8989
     restart: unless-stopped
 
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    network_mode: bridge
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=Europe/Paris
+    volumes:
+      - config_lidarr:/config
+      - music:/music
+      - downloads:/downloads
+    ports:
+      - 8686:8686
+    restart: unless-stopped
+
   jackett:
     image: lscr.io/linuxserver/jackett:latest
     container_name: jackett
@@ -111,7 +130,8 @@ services:
       - downloads:/downloads
     restart: unless-stopped
     depends_on:
-      - nordlynx
+      nordlynx:
+        condition: service_healthy
 
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
@@ -126,7 +146,8 @@ services:
       - PORT=8191
     restart: unless-stopped
     depends_on:
-      - nordlynx
+      nordlynx:
+        condition: service_healthy
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -142,7 +163,8 @@ services:
       - downloads:/downloads
     restart: unless-stopped
     depends_on:
-      - nordlynx
+      nordlynx:
+        condition: service_healthy
 
 volumes:
   movies:
@@ -157,6 +179,13 @@ volumes:
     driver_opts:
       type: nfs
       device: /volume1/Data/tv
+      o: bind
+
+  music:
+    driver: local
+    driver_opts:
+      type: nfs
+      device: /volume1/Data/music
       o: bind
 
   downloads:
@@ -192,6 +221,13 @@ volumes:
     driver_opts:
       type: nfs
       device: /volume1/Data/config/sonarr
+      o: bind
+
+  config_lidarr:
+    driver: local
+    driver_opts:
+      type: nfs
+      device: /volume1/Data/config/lidarr
       o: bind
 
   config_jackett:
