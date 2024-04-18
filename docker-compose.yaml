@@ -96,21 +96,6 @@ services:
       - 8989:8989
     restart: unless-stopped
 
-  lidarr:
-    image: lscr.io/linuxserver/lidarr:latest
-    container_name: lidarr
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=Europe/Paris
-    volumes:
-      - config_lidarr:/config
-      - music:/music
-      - downloads:/downloads
-    ports:
-      - 8686:8686
-    restart: unless-stopped
-
   jackett:
     image: lscr.io/linuxserver/jackett:latest
     container_name: jackett
@@ -220,13 +205,6 @@ volumes:
     driver_opts:
       type: nfs
       device: /volume1/Data/config/sonarr
-      o: bind
-
-  config_lidarr:
-    driver: local
-    driver_opts:
-      type: nfs
-      device: /volume1/Data/config/lidarr
       o: bind
 
   config_jackett:
