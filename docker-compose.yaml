@@ -59,7 +59,6 @@ services:
       - config_jellyfin:/config
       - tv:/tv
       - movies:/movies
-      - music:/music
     ports:
       - 8096:8096
     devices:
@@ -156,13 +155,6 @@ volumes:
     driver_opts:
       type: nfs
       device: /volume1/Data/tv
-      o: bind
-
-  music:
-    driver: local
-    driver_opts:
-      type: nfs
-      device: /volume1/Data/music
       o: bind
 
   downloads:
