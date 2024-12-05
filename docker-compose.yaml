@@ -22,31 +22,9 @@ services:
       - net.ipv6.conf.all.disable_ipv6=1
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl https://ipinfo.io/country | grep CH"]
       interval: 30s
       timeout: 10s
       retries: 6
-
-  plex:
-    profiles:
-      - plex
-    image: plexinc/pms-docker:plexpass
-    container_name: plex
-    environment:
-      - PLEX_UID=${PLEX_UID}
-      - PLEX_GID=${PLEX_GID}
-      - TZ=Europe/Paris
-    volumes:
-      - config_plex_tmp:/tmp
-      - config_plex_tmp:/transcode
-      - config_plex:/config/Library/Application Support
-      - tv:/tv
-      - movies:/movies
-    ports:
-      - 32400:32400
-    devices:
-      - /dev/dri:/dev/dri
-    restart: unless-stopped
 
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
@@ -162,20 +140,6 @@ volumes:
     driver_opts:
       type: nfs
       device: /volume1/Data/downloads
-      o: bind
-
-  config_plex:
-    driver: local
-    driver_opts:
-      type: nfs
-      device: /var/packages/PlexMediaServer/shares/PlexMediaServer/AppData/
-      o: bind
-
-  config_plex_tmp:
-    driver: local
-    driver_opts:
-      type: nfs
-      device: /var/packages/PlexMediaServer/shares/PlexMediaServer/AppData/tmp/
       o: bind
 
   config_jellyfin:
