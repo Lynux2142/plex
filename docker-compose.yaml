@@ -1,44 +1,69 @@
-version: "3"
-
 services:
   nordlynx:
-    image: ghcr.io/bubuntux/nordlynx
+    image: ghcr.io/bubuntux/nordlynx:2023-06-01
     container_name: nordlynx
-    networks:
-      - network_nordlynx
     cap_add:
       - NET_ADMIN
     environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
       - PRIVATE_KEY=${NORDVPN_PRIVATE_KEY}
-      - QUERY=filters\[country_id\]=209
+      - QUERY=filters\[country_id\]=209 # Switzerland 209 - France 74
       - NETWORK=192.168.0.0/24
       - TZ=Europe/Paris
+      - ALLOWED_IPS=0.0.0.0/1,128.0.0.0/1
+      - "POST_UP=ip -4 route add $$(wg | awk -F'[: ]' '/endpoint/ {print $$5}') via $$(ip route | awk '/default/ {print $$3}')"
+      - "PRE_DOWN=ip -4 route del $$(route -n | awk '/255.255.255.255/ {print $$1}') via $$(ip route | awk '/default/ {print $$3}')"
     ports:
       - 8080:8080
+      - 8081:8081
       - 6881:6881
       - 6881:6881/udp
-      - 9117:9117
-      - 8191:8191
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=1
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://ip-api.com/json/?fields=countryCode | grep CH"]
+      interval: 1m
+      timeout: 30s
+      retries: 1
 
-  plex:
-    image: lscr.io/linuxserver/plex:latest
-    container_name: plex
-    network_mode: bridge
+  stremio:
+    image: tsaridas/stremio-docker:latest
+    init: true
+    container_name: stremio
+    network_mode: service:nordlynx
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Paris
-      - VERSION=docker
-      - PLEX_CLAIM=${PLEX_CLAIM}
+      NO_CORS: 1
+      AUTO_SERVER_URL: 1
+      WEBUI_INTERNAL_PORT: 8081
     volumes:
-      - config_plex:/config
+      - config_stremio:/root/.stremio-server
       - tv:/tv
       - movies:/movies
     ports:
-      - 32400:32400
+      - 8096:8096
+    devices:
+      - /dev/dri:/dev/dri
+    restart: unless-stopped
+
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=Europe/Paris
+      - PORT=5055
+    ports:
+      - 5055:5055
+    volumes:
+      - config_seerr:/app/config
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/status || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
     restart: unless-stopped
 
   jellyfin:
@@ -59,10 +84,9 @@ services:
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
-    network_mode: bridge
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=Europe/Paris
     volumes:
       - config_radarr:/config
@@ -75,10 +99,9 @@ services:
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
-    network_mode: bridge
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=Europe/Paris
     volumes:
       - config_sonarr:/config
@@ -88,81 +111,119 @@ services:
       - 8989:8989
     restart: unless-stopped
 
-  jackett:
-    image: lscr.io/linuxserver/jackett:latest
-    container_name: jackett
-    network_mode: service:nordlynx
+  #jackett:
+  #  image: lscr.io/linuxserver/jackett:latest
+  #  init: true
+  #  container_name: jackett
+  #  environment:
+  #    - PUID=${PUID}
+  #    - PGID=${PGID}
+  #    - TZ=Europe/Paris
+  #    - AUTO_UPDATE=true
+  #  volumes:
+  #    - config_jackett:/config
+  #    - downloads:/downloads
+  #  ports:
+  #    - 9117:9117
+  #  restart: unless-stopped
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=Europe/Paris
-      - AUTO_UPDATE=true
     volumes:
-      - config_jackett:/config
-      - downloads:/downloads
+      - config_prowlarr:/config
+    ports:
+      - 9696:9696
     restart: unless-stopped
     depends_on:
       - nordlynx
 
-  flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: flaresolverr
-    network_mode: service:nordlynx
+  #flaresolverr:
+  #  image: ghcr.io/flaresolverr/flaresolverr:latest
+  #  init: true
+  #  container_name: flaresolverr
+  #  environment:
+  #    - LOG_LEVEL=debug
+  #    - LOG_HTML=false
+  #    - CAPTCHA_SOLVER=hcaptcha-solver #none #hcaptcha-solver #harvester
+  #    #- HARVESTER_ENDPOINT=https://127.0.0.1:5000/token
+  #    - TZ=Europe/Paris
+  #    - PORT=8191
+  #    - LANG=en_US
+  #    - BROWSER_TIMEOUT=300000
+  #    - PROMETHEUS_ENABLED=true
+  #    - PROMETHEUS_PORT=8192
+  #  ports:
+  #    - 8191:8191
+  #    - 8192:8192
+  #  restart: unless-stopped
     environment:
-      - LOG_LEVEL=info
-      - LOG_HTML=false
-      - CAPTCHA_SOLVER=harvester
-      - HARVESTER_ENDPOINT=https://127.0.0.1:5000/token
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=Europe/Paris
-      - PORT=8191
+    volumes:
+      - config_prowlarr:/config
+    ports:
+      - 9696:9696
     restart: unless-stopped
-    depends_on:
-      - nordlynx
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     network_mode: service:nordlynx
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID}
+      - PGID=${PGID}
       - TZ=Europe/Paris
       - WEBUI_PORT=8080
+      - TORRENTING_PORT=6881
     volumes:
       - config_qbittorrent:/config
       - downloads:/downloads
     restart: unless-stopped
     depends_on:
-      - nordlynx
+      nordlynx:
+        condition: service_healthy
 
 volumes:
   movies:
     driver: local
     driver_opts:
-      type: nfs
-      device: /mnt/DataDisk/movies
+      type: none
       o: bind
+      device: /volume1/Data/movies
 
   tv:
     driver: local
     driver_opts:
-      type: nfs
-      device: /mnt/DataDisk/tv
+      type: none
       o: bind
+      device: /volume1/Data/tv
 
   downloads:
     driver: local
     driver_opts:
-      type: nfs
-      device: /mnt/DataDisk/downloads
+      type: none
       o: bind
+      device: /volume1/Data/downloads
 
-  config_plex:
+  config_jellyfin:
     driver: local
     driver_opts:
-      type: nfs
-      device: /mnt/DataDisk/config/plex
+      type: none
       o: bind
+      device: /volume1/Data/config/jellyfin
+
+  config_seerr:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /volume1/Data/config/seerr
 
   config_jellyfin:
     driver: local
@@ -174,31 +235,41 @@ volumes:
   config_radarr:
     driver: local
     driver_opts:
-      type: nfs
-      device: /mnt/DataDisk/config/radarr
+      type: none
       o: bind
+      device: /volume1/Data/config/radarr
 
   config_sonarr:
     driver: local
     driver_opts:
-      type: nfs
-      device: /mnt/DataDisk/config/sonarr
+      type: none
       o: bind
+      device: /volume1/Data/config/sonarr
 
   config_jackett:
     driver: local
     driver_opts:
-      type: nfs
-      device: /mnt/DataDisk/config/jackett
+      type: none
       o: bind
+      device: /volume1/Data/config/jackett
+
+  config_prowlarr:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /volume1/Data/config/prowlarr
 
   config_qbittorrent:
     driver: local
     driver_opts:
-      type: nfs
-      device: /mnt/DataDisk/config/qbittorrent
+      type: none
       o: bind
+      device: /volume1/Data/config/qbittorrent
 
-networks:
-  network_nordlynx:
-    driver: bridge
+  config_stremio:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /volume1/Data/config/stremio
