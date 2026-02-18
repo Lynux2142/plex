@@ -216,13 +216,6 @@ volumes:
       o: bind
       device: /volume1/Data/config/seerr
 
-  config_jellyfin:
-    driver: local
-    driver_opts:
-      type: nfs
-      device: /mnt/DataDisk/config/jellyfin
-      o: bind
-
   config_radarr:
     driver: local
     driver_opts:
