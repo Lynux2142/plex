@@ -41,8 +41,6 @@ services:
       - config_stremio:/root/.stremio-server
       - tv:/tv
       - movies:/movies
-    ports:
-      - 8096:8096
     devices:
       - /dev/dri:/dev/dri
     restart: unless-stopped
@@ -75,10 +73,12 @@ services:
       - TZ=Europe/Paris
     volumes:
       - config_jellyfin:/config
-      - tv:/data/tvshows
-      - movies:/data/movies
+      - tv:/tv
+      - movies:/movies
     ports:
       - 8096:8096
+    devices:
+      - /dev/dri:/dev/dri
     restart: unless-stopped
 
   radarr:
