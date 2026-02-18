@@ -161,15 +161,6 @@ services:
   #    - 8191:8191
   #    - 8192:8192
   #  restart: unless-stopped
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=Europe/Paris
-    volumes:
-      - config_prowlarr:/config
-    ports:
-      - 9696:9696
-    restart: unless-stopped
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
