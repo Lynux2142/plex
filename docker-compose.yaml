@@ -29,6 +29,10 @@ services:
       timeout: 5s
       interval: 5s
       retries: 1
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   stremio:
     image: tsaridas/stremio-docker:latest
@@ -49,6 +53,10 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   seerr:
     image: ghcr.io/seerr-team/seerr:latest
@@ -68,6 +76,10 @@ services:
       interval: 15s
       retries: 3
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
@@ -85,6 +97,10 @@ services:
     devices:
       - /dev/dri:/dev/dri
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768M
 
   radarr:
     image: lscr.io/linuxserver/radarr:latest
@@ -100,6 +116,10 @@ services:
     ports:
       - 7878:7878
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -115,6 +135,10 @@ services:
     ports:
       - 8989:8989
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
@@ -128,6 +152,10 @@ services:
     ports:
       - 9696:9696
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -146,6 +174,10 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
 volumes:
   movies:
